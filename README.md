@@ -10,7 +10,7 @@ Surface classification is a crucial task in Earth observation, helping in variou
 
 ### Data Collection
 
-- **Data Source**: Sentinel-2 satellite imagery.
+- **Data Source**: Sentinel-3 satellite imagery from corpenicus.
 - **Tools Used**: Google Earth Engine (GEE), Python, and IRIS.
 
 ### Steps Involved
