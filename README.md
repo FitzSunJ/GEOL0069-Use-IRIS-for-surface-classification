@@ -4,7 +4,7 @@ This project aims to utilize IRIS to generate training data for a wide range of 
 
 ## Project Overview
 
-Surface classification is a crucial task in Earth observation, helping in various applications such as environmental monitoring, urban planning, and agricultural management. This project leverages the power of IRIS (Intelligently Reinforced Image Segmentation) to accurately classify and label surface types from satellite images.
+Surface classification is a crucial task in Earth observation, helping in various applications such as environmental monitoring, urban planning, and agricultural management. This project leverages the power of IRIS (Intelligently Reinforced Image Segmentation) to accurately classify and label surface types from satellite images. Here is focusing on north europe.
 
 ## Methodology
 
