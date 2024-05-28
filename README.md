@@ -25,3 +25,7 @@ This project focuses on the best use of IRIS to generate training data for a wid
 I choose use Docker to deploy IRIS. First, build an image (run from IRIS's root directory). Then, you can use docker run to launch IRIS. However, please note that port-forwarding is needed (here we use port 80 as an example for a typical http setup, but the port number can be set in your IRIS config file) and the directory to your project also needs to be given as a volume to docker.
 
 `docker pull totony4real/iris:1.0`
+
+Then use below code and substitude the path with you chunk file and config.json
+
+`docker run -p 80:5000 -v path_to_data:/dataset/ --rm -it totony4real/iris:1.0 label /dataset/config.json`
