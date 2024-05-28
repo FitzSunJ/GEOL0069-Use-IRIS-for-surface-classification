@@ -1,0 +1,87 @@
+!pip install netCDF4
+import os
+import netCDF4
+import numpy as np
+import re
+
+# Define the path to the main folder where your data is stored.
+# You need to replace 'path/to/data' with the actual path to your data folder.
+main_folder_path = 'path/to/data' 
+
+# This part of the code is responsible for finding all directories in the main_folder that end with '.SEN3'.
+# '.SEN3' is the format of the folder containing specific satellite data files (in this case, OLCI data files).
+directories = [d for d in os.listdir(main_folder_path) if os.path.isdir(os.path.join(main_folder_path, d)) and d.endswith('.SEN3')]
+
+# Loop over each directory (i.e., each set of data) found above.
+for directory in directories:
+    # Construct the path to the OLCI data file within the directory.
+    # This path is used to access the data files.
+    OLCI_file_p = os.path.join(main_folder_path, directory, directory)
+    
+    # Print the path to the current data file being processed.
+    # This is helpful for tracking which file is being processed at any time.
+    print(f"Processing: {OLCI_file_p}")
+
+    # Load the instrument data from a file named 'instrument_data.nc' inside the directory.
+    # This file contains various data about the instrument that captured the satellite data.
+    instrument_data = netCDF4.Dataset(OLCI_file_p + '/instrument_data.nc')
+    solar_flux = instrument_data.variables['solar_flux'][:]  # Extract the solar flux data.
+    detector_index = instrument_data.variables['detector_index'][:]  # Extract the detector index.
+
+    # Load tie geometries from a file named 'tie_geometries.nc'.
+    # Tie geometries contain information about viewing angles, which are important for data analysis.
+    tie_geometries = netCDF4.Dataset(OLCI_file_p + '/tie_geometries.nc')
+    SZA = tie_geometries.variables['SZA'][:]  # Extract the Solar Zenith Angle (SZA).
+
+    # Create a directory for saving the processed data using the original directory name.
+    # This directory will be used to store output files.
+    save_directory = os.path.join('path/to/save', directory)
+    if not os.path.exists(save_directory):
+        os.makedirs(save_directory)
+
+    # This loop processes each radiance band in the OLCI data.
+    # OLCI instruments capture multiple bands, each representing different wavelengths.
+    OLCI_data = []
+    for Radiance in range(1, 22):  # There are 21 bands in OLCI data.
+        
+        Rstr = "%02d" % Radiance  # Formatting the band number.
+        solar_flux_band = solar_flux[Radiance - 1]  # Get the solar flux for the current band.
+
+        # Print information about the current band being processed.
+        # This includes the band number and its corresponding solar flux.
+        print(f"Processing Band: {Rstr}")
+        print(f"Solar Flux for Band {Rstr}: {solar_flux_band}")
+
+        # Load radiance values from the OLCI data file for the current band.
+        OLCI_nc = netCDF4.Dataset(OLCI_file_p + '/Oa' + Rstr + '_radiance.nc')
+        radiance_values = np.asarray(OLCI_nc['Oa' + Rstr + '_radiance'])
+
+        # Initialize an array to store angle data, which will be calculated based on SZA.
+        angle = np.zeros_like(radiance_values)
+        for x in range(angle.shape[1]):
+            angle[:, x] = SZA[:, int(x/64)]
+
+        # Calculate the Top of Atmosphere Bidirectional Reflectance Factor (TOA BRF) for the current band.
+        TOA_BRF = (np.pi * radiance_values) / (solar_flux_band[detector_index] * np.cos(np.radians(angle)))
+
+        # Add the calculated TOA BRF data to the OLCI_data list.
+        OLCI_data.append(TOA_BRF)
+
+        # Print the range of reflectance values for the current band.
+        print(f"Reflectance Values Range for Band {Rstr}: {np.nanmin(TOA_BRF)}, {np.nanmax(TOA_BRF)}")
+
+    # Reshape the OLCI_data array for further analysis or visualization.
+    reshaped_array = np.moveaxis(np.array(OLCI_data), 0, -1)
+    print("Reshaped array shape:", reshaped_array.shape)
+
+    # Split the reshaped array into smaller chunks along the second dimension.
+    # This can be useful for handling large datasets more efficiently.
+    split_arrays = np.array_split(reshaped_array, 5, axis=1)
+
+    # Save each chunk of data separately.
+    # This is helpful for processing or analyzing smaller portions of data at a time.
+    for i, arr in enumerate(split_arrays):
+        print(f"Chunk {i+1} shape:", arr.shape)
+        save_path = os.path.join(save_directory, f"chunk_{i+1}_band_{Rstr}.npy")
+        np.save(save_path, arr)
+        print(f"Saved Chunk {i+1} for Band {Rstr} to {save_path}")
